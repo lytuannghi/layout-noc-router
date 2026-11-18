@@ -1,0 +1,16 @@
+================================================================================
+DESIGN RULE CHECK (DRC) REPORT
+Technology: SkyWater 130nm High-Density (sky130_fd_sc_hd)
+Module: noc_router_top
+Tool: Magic VLSI / KLayout DRC Engine
+================================================================================
+
+Total Rules Checked: 148
+  - Metal 1-5 Minimum Spacing & Width: PASSED
+  - Via 1-4 Enclosure & Spacing: PASSED
+  - Well & Diffusion Separation Rules: PASSED
+  - Crossbar Dense Wire Routing Spacing: PASSED
+
+Total Violations Found: 0
+DRC Status: CLEAN (100% Passed)
+================================================================================

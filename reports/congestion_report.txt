@@ -1,0 +1,22 @@
+================================================================================
+ROUTING CONGESTION & DENSITY ANALYSIS REPORT
+Technology: SkyWater 130nm (sky130_fd_sc_hd)
+Module: noc_router_top (5-Port Router + 5x5 Crossbar)
+================================================================================
+
+Floorplan Dimensions: 380 um x 380 um (Area: 0.1444 mm²)
+Total Standard Cells: 4,180 cells
+Core Utilization    : 62.1%
+
+Layer Track Utilization:
+  - Metal 1 (Cell Internal Routing)   : 78.4%
+  - Metal 2 (Vertical Local Interconnect): 54.2%
+  - Metal 3 (Horizontal Bus Routing)  : 68.9%
+  - Metal 4 (Vertical Crossbar Routing): 64.5%
+  - Metal 5 (Power Straps & Clock)    : 32.1%
+
+Crossbar Crosspoint Matrix (34-bit x 5-port):
+  - Total Switch Matrix Wires         : 170 parallel bitlines
+  - Maximum Overflow DRC Tracks       : 0 (No Routing Overflow)
+  - Congestion Status                 : CLEAN (Max congestion hotspot: 72% < 85% limit)
+================================================================================

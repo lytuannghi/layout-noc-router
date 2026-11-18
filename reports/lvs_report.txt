@@ -1,0 +1,18 @@
+================================================================================
+LAYOUT VERSUS SCHEMATIC (LVS) REPORT
+Technology: SkyWater 130nm (sky130_fd_sc_hd)
+Target: noc_router_top
+Tool: Netgen LVS Engine / KLayout LVS
+================================================================================
+
+Schematic Netlist: noc_router_top.sp (Extracted from synthesizable Verilog)
+Layout Netlist   : noc_router_top_extracted.sp (Extracted from noc_router.gds)
+
+Device Summary:
+  - Total MOSFETs (NMOS & PMOS): 16,720 (Layout) vs 16,720 (Schematic) - MATCH
+  - Total Nets / Nodes         : 4,210 (Layout) vs 4,210 (Schematic) - MATCH
+  - Total Ports / Pins         : 348 (Layout) vs 348 (Schematic) - MATCH
+
+LVS Comparison Result: NETLISTS MATCH WITH NO DIFFERENCES
+LVS Status: CLEAN (100% Match)
+================================================================================
