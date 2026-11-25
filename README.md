@@ -1,35 +1,32 @@
 # 2D Mesh Network-on-Chip (NoC) Router Physical Design (SkyWater 130nm)
 
 [![Process](https://img.shields.io/badge/Process-SkyWater%20130nm%20(sky130)-blue)](https://github.com/google/skywater-pdk)
-[![Layout Signoff](https://img.shields.io/badge/Signoff-DRC%20Clean%20%7C%20LVS%20Clean-brightgreen)](reports/)
-[![Frequency](https://img.shields.io/badge/Target%20Clock-100%20MHz%20Timing%20Met-emerald)](reports/)
+[![Layout Signoff](https://img.shields.io/badge/Geometric%20DRC-0%20Violations-brightgreen)](reports/drc_report.txt)
+[![Frequency](https://img.shields.io/badge/Target%20Clock-100%20MHz%20Budget-emerald)](reports/)
 [![License](https://img.shields.io/badge/License-MIT-lightgrey)](LICENSE)
 
-An ASIC Physical Design implementation of a 5-port 2D Mesh Network-on-Chip (NoC) Router targeted for the SkyWater 130nm (sky130_fd_sc_hd) standard cell process.
+A procedural ASIC Physical Design implementation of a 5-port 2D Mesh Network-on-Chip (NoC) Router targeted for the SkyWater 130nm (`sky130_fd_sc_hd`) layer stack, verified with an automated Python O(N log N) sweep-line geometric DRC engine.
 
-Designed and implemented by **Lý Tuấn Nghi ([@lytuannghi](https://github.com/lytuannghi))**.
+Designed and implemented by **Ly Tuan Nghi ([@lytuannghi](https://github.com/lytuannghi))**.
 
 ---
 
 ## Technical Specifications
 
-- **Silicon Area:** 380 um x 380 um (Total Die Area: 0.1444 mm²).
-- **Core Density:** 62.1% utilization across 4,180 standard cells.
-- **Switch Architecture:** Central 5x5 Non-blocking Crossbar with 34-bit parallel bus lines (170 parallel wires).
-- **Geographic Port Placement:** Symmetrical floorplan with North (top), South (bottom), East (right), West (left), and Local PE (center) buffer placement to minimize inter-router connection wire lengths.
-- **Routing Strategy:** Metal 1-2 for local cell logic, Metal 3 for horizontal flit buses, Metal 4 for vertical crossbar routing, Metal 5 for global power grid and clock trunk.
-- **Clock Tree Synthesis (CTS):** Balanced 100 MHz clock distribution tree with maximum skew of 42.6 ps.
+- **Silicon Area:** 380.00 um x 380.00 um (Total Die Area: 0.1444 mm²).
+- **Extracted GDSII Structures:** 6 functional macro regions (`L64`), 5,152 active diffusion and polysilicon gate shapes (`L65`/`L66`), 424 Metal 2 tracks (`L70`), 34 VIA3 crossbar bridges (`L73`), and 10 external port regions (`L108`).
+- **Switch Architecture:** Central 5-port crossbar core surrounded by symmetrical North, South, East, West, and Local PE buffer regions.
+- **Routing Strategy:** Non-overlapping Metal 1/2 local and inter-buffer tracks, Metal 3 horizontal buses, Metal 4 vertical trunks + split H-tree clock arms (routed cleanly around crossbar switches), and Metal 5 power rails.
 
 ---
 
 ## Physical Verification Summary
 
-| Verification Stage | Metric / Tool | Result |
+| Verification Stage | Method / Tool | Result |
 | :--- | :--- | :---: |
-| **Design Rule Check (DRC)** | Magic VLSI / KLayout (148 rules) | **PASSED (0 Violations)** |
-| **Layout Versus Schematic (LVS)** | Netgen (16,720 MOSFETs matching) | **PASSED (100% Match)** |
-| **Congestion Analysis** | Track overflow check | **CLEAN (0 Overflows)** |
-| **Clock Skew** | Balanced CTS at 100 MHz | **42.6 ps** |
+| **Geometric DRC** | `scripts/verify_gds_drc.py` (Sweep-line width, spacing, overlap, OOB) | **PASSED (0 Violations)** |
+| **Structural Extraction** | Extracted GDSII macro/gate/pin audit (`reports/lvs_report.txt`) | **5,152 gates / 6 macros matched** |
+| **Congestion Analysis** | Channel pitch & track allocation check (`reports/congestion_report.txt`) | **Reference Clean (0 Short Tracks)** |
 
 ---
 
@@ -38,22 +35,23 @@ Designed and implemented by **Lý Tuấn Nghi ([@lytuannghi](https://github.com/
 ```
 layout-noc-router/
 ├── gds/
-│   └── noc_router.gds        # Physical GDSII layout stream (1.17 MB)
+│   └── noc_router.gds             # Physical GDSII layout stream (1.06 MB, 0 DRC violations)
 ├── reports/
-│   ├── drc_report.txt        # Design Rule Check signoff report
-│   ├── lvs_report.txt        # Layout Versus Schematic signoff report
-│   └── congestion_report.txt # Wire track density analysis report
+│   ├── drc_report.txt             # Verified Python sweep-line geometric DRC report
+│   ├── lvs_report.txt             # Structural GDSII macro & device inventory report
+│   └── congestion_report.txt      # Reference track density analysis report
 ├── scripts/
-│   └── build_layout_noc_router.py # Physical layout generator script
+│   ├── build_layout_noc_router.py # Procedural layout generator + automatic DRC check
+│   └── verify_gds_drc.py          # Standalone binary GDSII sweep-line DRC engine
 └── README.md
 ```
 
 ---
 
-## Layout Inspection
-
-Open the layout file in KLayout:
+## Layout Regeneration & Verification
 
 ```bash
+python scripts/build_layout_noc_router.py
+python scripts/verify_gds_drc.py gds/noc_router.gds --top noc_router_top
 klayout gds/noc_router.gds
 ```

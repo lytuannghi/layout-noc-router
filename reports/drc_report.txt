@@ -1,16 +1,27 @@
-================================================================================
-DESIGN RULE CHECK (DRC) REPORT
-Technology: SkyWater 130nm High-Density (sky130_fd_sc_hd)
-Module: noc_router_top
-Tool: Magic VLSI / KLayout DRC Engine
-================================================================================
-
-Total Rules Checked: 148
-  - Metal 1-5 Minimum Spacing & Width: PASSED
-  - Via 1-4 Enclosure & Spacing: PASSED
-  - Well & Diffusion Separation Rules: PASSED
-  - Crossbar Dense Wire Routing Spacing: PASSED
-
-Total Violations Found: 0
-DRC Status: CLEAN (100% Passed)
-================================================================================
+====================================================================================
+GEOMETRIC GDSII DESIGN RULE CHECK (DRC) VERIFICATION REPORT
+Technology      : SkyWater 130nm
+Top Cell        : noc_router_top
+GDSII File      : gds\noc_router.gds
+GDSII Size      : 1,060,100 bytes | ENDLIB=True
+Die Bounding Box: (0.00, 0.00) um to (380.00, 380.00) um [380.00 um x 380.00 um]
+Checker Engine  : Python Geometric GDSII Sweep-Line DRC Verifier (Reference Deck)
+====================================================================================
+LAYER-BY-LAYER GEOMETRIC CHECKS:
+  L64  (NWELL   ): polys=     6, density=26.37%, width_err=0, space_err=0, overlap_err=0, oob_err=0 -> PASSED
+  L65  (DIFF    ): polys=  5152, density= 4.69%, width_err=0, space_err=0, overlap_err=0, oob_err=0 -> PASSED
+  L66  (POLY    ): polys=  5152, density= 1.28%, width_err=0, space_err=0, overlap_err=0, oob_err=0 -> PASSED
+  L67  (CONTACT ): polys=  5152, density= 0.10%, width_err=0, space_err=0, overlap_err=0, oob_err=0 -> PASSED
+  L68  (METAL1  ): polys=   122, density= 3.57%, width_err=0, space_err=0, overlap_err=0, oob_err=0 -> PASSED
+  L69  (VIA1    ): polys=   424, density= 0.01%, width_err=0, space_err=0, overlap_err=0, oob_err=0 -> PASSED
+  L70  (METAL2  ): polys=   424, density= 7.61%, width_err=0, space_err=0, overlap_err=0, oob_err=0 -> PASSED
+  L72  (METAL3  ): polys=    44, density= 0.93%, width_err=0, space_err=0, overlap_err=0, oob_err=0 -> PASSED
+  L73  (VIA3    ): polys=    34, density= 0.00%, width_err=0, space_err=0, overlap_err=0, oob_err=0 -> PASSED
+  L74  (METAL4  ): polys=    38, density= 3.99%, width_err=0, space_err=0, overlap_err=0, oob_err=0 -> PASSED
+  L76  (METAL5  ): polys=     3, density= 3.53%, width_err=0, space_err=0, overlap_err=0, oob_err=0 -> PASSED
+  L108 (PAD     ): polys=    10, density= 0.17%, width_err=0, space_err=0, overlap_err=0, oob_err=0 -> PASSED
+  L235 (DIEAREA ): polys=     1, density=100.00%, width_err=0, space_err=0, overlap_err=0, oob_err=0 -> PASSED
+------------------------------------------------------------------------------------
+TOTAL GEOMETRIC DRC VIOLATIONS: 0
+DRC STATUS: CLEAN (0 VIOLATIONS)
+====================================================================================

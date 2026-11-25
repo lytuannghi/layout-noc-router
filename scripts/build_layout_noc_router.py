@@ -1,40 +1,44 @@
 # ============================================================================
 # File: build_layout_noc_router.py
-# Description: Generates Physical Design GDSII for 2D Mesh NoC Router (SkyWater 130nm)
+# Description: Clean DRC-Verified GDSII Physical Design for 5-Port 2D Mesh
+#              NoC Router (SkyWater 130nm). Zero hardcoded paths or overlaps.
 # ============================================================================
 
 import os
 import struct
 import random
+from verify_gds_drc import verify_gds
+
 
 class GDSWriter:
     def __init__(self, filename, libname="NOC_ROUTER_LIB"):
         self.filename = filename
-        self.libname = libname
         self.f = open(filename, "wb")
         self.write_record(0x0002, struct.pack(">h", 600))
-        self.write_record(0x0102, b"\x00"*24)
-        name_bytes = (libname + "\x00").encode("ascii")
-        if len(name_bytes) % 2 != 0: name_bytes += b"\x00"
-        self.write_record(0x0206, name_bytes)
+        self.write_record(0x0102, b"\x00" * 24)
+        nb = (libname + "\x00").encode("ascii")
+        if len(nb) % 2 != 0:
+            nb += b"\x00"
+        self.write_record(0x0206, nb)
         self.write_record(0x0305, struct.pack(">dd", 0.001, 1e-9))
 
     def write_record(self, rec_type, data=b""):
-        rec_len = 4 + len(data)
-        self.f.write(struct.pack(">HH", rec_len, rec_type))
-        if data: self.f.write(data)
+        self.f.write(struct.pack(">HH", 4 + len(data), rec_type))
+        if data:
+            self.f.write(data)
 
     def start_structure(self, strname):
-        self.write_record(0x0502, b"\x00"*24)
-        name_bytes = (strname + "\x00").encode("ascii")
-        if len(name_bytes) % 2 != 0: name_bytes += b"\x00"
-        self.write_record(0x0606, name_bytes)
+        self.write_record(0x0502, b"\x00" * 24)
+        nb = (strname + "\x00").encode("ascii")
+        if len(nb) % 2 != 0:
+            nb += b"\x00"
+        self.write_record(0x0606, nb)
 
     def end_structure(self):
         self.write_record(0x0700)
 
     def add_box(self, layer, datatype, x1, y1, x2, y2):
-        coords = [x1, y1, x2, y1, x2, y2, x1, y2, x1, y1]
+        coords = [int(x1), int(y1), int(x2), int(y1), int(x2), int(y2), int(x1), int(y2), int(x1), int(y1)]
         self.write_record(0x0800)
         self.write_record(0x0d02, struct.pack(">h", layer))
         self.write_record(0x0e02, struct.pack(">h", datatype))
@@ -45,7 +49,8 @@ class GDSWriter:
         self.write_record(0x0400)
         self.f.close()
 
-def build_noc_router_layout(out_path):
+
+def build_noc_router_layout(out_path, report_path):
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     gds = GDSWriter(out_path, "NOC_ROUTER_SKY130")
     gds.start_structure("noc_router_top")
@@ -66,82 +71,82 @@ def build_noc_router_layout(out_path):
     L_MET5     = 76
     L_PIN      = 108
 
-    # Die Size: 380 um x 380 um (380000 x 380000 nm)
     DIE_W, DIE_H = 380000, 380000
     gds.add_box(L_DIE_AREA, 0, 0, 0, DIE_W, DIE_H)
 
-    # 1. Dual Power Rings (Metal 4 & Metal 5)
-    gds.add_box(L_MET5, 0, 5000, 5000, DIE_W - 5000, 10000)
-    gds.add_box(L_MET5, 0, 5000, DIE_H - 10000, DIE_W - 5000, DIE_H - 5000)
-    gds.add_box(L_MET4, 0, 5000, 5000, 10000, DIE_H - 5000)
-    gds.add_box(L_MET4, 0, DIE_W - 10000, 5000, DIE_W - 5000, DIE_H - 5000)
+    # 1. Orthogonal Non-Overlapping Power Rings (M5 Top/Bottom, M4 Left/Right)
+    gds.add_box(L_MET5, 0, 6000, 6000, DIE_W - 6000, 12000)
+    gds.add_box(L_MET5, 0, 6000, DIE_H - 12000, DIE_W - 6000, DIE_H - 6000)
+    gds.add_box(L_MET4, 0, 6000, 12000, 12000, DIE_H - 12000)
+    gds.add_box(L_MET4, 0, DIE_W - 12000, 12000, DIE_W - 6000, DIE_H - 12000)
 
-    # 2. Central 5x5 Non-blocking Crossbar Core (80 um x 80 um)
+    # 2. Central 5x5 Crossbar Matrix (150um..230um): Horizontal M3, Vertical M4
     CB_X1, CB_Y1 = 150000, 150000
     CB_X2, CB_Y2 = 230000, 230000
-    # Crossbar substrate & outline
     gds.add_box(L_NWELL, 0, CB_X1, CB_Y1, CB_X2, CB_Y2)
-    # Crossbar 34-bit parallel bus lines (Horizontal M3, Vertical M4)
     for i in range(34):
-        offset = i * 2200
-        # Horizontal buses (Metal 3)
-        gds.add_box(L_MET3, 0, CB_X1, CB_Y1 + offset, CB_X2, CB_Y1 + offset + 400)
-        # Vertical buses (Metal 4)
-        gds.add_box(L_MET4, 0, CB_X1 + offset, CB_Y1, CB_X1 + offset + 400, CB_Y2)
-        # Crosspoint switches (Via 3 + MUX cells)
-        gds.add_box(L_VIA3, 0, CB_X1 + offset + 50, CB_Y1 + offset + 50, CB_X1 + offset + 350, CB_Y1 + offset + 350)
+        off = i * 2200
+        gds.add_box(L_MET3, 0, CB_X1, CB_Y1 + off, CB_X2, CB_Y1 + off + 400)
+        gds.add_box(L_MET4, 0, CB_X1 + off, CB_Y1, CB_X1 + off + 400, CB_Y2)
+        gds.add_box(L_VIA3, 0, CB_X1 + off + 50, CB_Y1 + off + 50, CB_X1 + off + 350, CB_Y1 + off + 350)
 
-    # 3. 5 Virtual Channel Buffer Blocks (Symmetric Geographic Layout)
+    # 3. Five Symmetric Virtual-Channel Input Buffers
     vc_blocks = [
-        ("VC_LOCAL", 150000, 110000, 230000, 140000), # Center-South of Crossbar
-        ("VC_NORTH", 150000, 240000, 230000, 340000), # Top
-        ("VC_SOUTH", 150000, 40000,  230000, 100000), # Bottom
-        ("VC_WEST",  40000,  150000, 140000, 230000), # Left
-        ("VC_EAST",  240000, 150000, 340000, 230000)  # Right
+        ("VC_LOCAL", 150000, 108000, 230000, 140000),
+        ("VC_NORTH", 150000, 240000, 230000, 340000),
+        ("VC_SOUTH", 150000,  36000, 230000,  96000),
+        ("VC_WEST",   36000, 150000, 138000, 230000),
+        ("VC_EAST",  242000, 150000, 344000, 230000),
     ]
-
     random.seed(101)
-    for name, bx1, by1, bx2, by2 in vc_blocks:
+    for _, bx1, by1, bx2, by2 in vc_blocks:
         gds.add_box(L_NWELL, 0, bx1, by1, bx2, by2)
-        # Standard cell rows inside each VC buffer
-        for ry in range(by1 + 2000, by2 - 2000, 2720):
+        for ry in range(by1 + 2000, by2 - 3000, 2720):
             gds.add_box(L_MET1, 0, bx1 + 1000, ry, bx2 - 1000, ry + 480)
             cx = bx1 + 1500
-            while cx < bx2 - 2500:
+            while cx < bx2 - 3500:
                 cw = random.choice([1360, 2040, 2720])
-                gds.add_box(L_DIFF, 0, cx + 200, ry + 200, cx + cw - 200, ry + 900)
-                gds.add_box(L_POLY, 0, cx + 500, ry + 100, cx + 650, ry + 2600)
+                gds.add_box(L_DIFF, 0, cx + 200, ry + 200, cx + cw - 200, ry + 1000)
+                gds.add_box(L_POLY, 0, cx + 500, ry + 150, cx + 650, ry + 2550)
                 gds.add_box(L_CONTACT, 0, cx + 700, ry + 300, cx + 870, ry + 470)
                 cx += cw
 
-    # 4. Global Interconnect Buses from VC Buffers to Crossbar (Metal 2, Metal 3)
-    for _ in range(1200):
-        gx = random.randint(30000, DIE_W - 35000)
-        gy = random.randint(30000, DIE_H - 35000)
-        gds.add_box(L_MET2, 0, gx, gy, gx + 360, min(DIE_H - 20000, gy + random.randint(8000, 40000)))
-        gds.add_box(L_VIA1, 0, gx + 50, gy + 50, gx + 250, gy + 250)
+    # 4. Deterministic Collision-Free Interconnect Tracks on M2 Vertical (spaced by 3000nm)
+    for tx in range(30000, DIE_W - 32000, 3000):
+        for seg in range(4):
+            gy1 = 28000 + seg * 82000
+            gy2 = gy1 + 72000
+            gds.add_box(L_MET2, 0, tx, gy1, tx + 360, gy2)
+            gds.add_box(L_VIA1, 0, tx + 60, gy1 + 100, tx + 260, gy1 + 300)
 
-    # 5. Clock Tree Distribution (100MHz balanced distribution)
+    # 5. Clock H-Tree (M5 vertical spine + split M5 horizontal arms clear of crossbar)
     cx, cy = DIE_W // 2, DIE_H // 2
-    gds.add_box(L_MET5, 0, cx - 1000, 20000, cx + 1000, DIE_H - 20000) # Vertical main spine
-    gds.add_box(L_MET4, 0, 20000, cy - 800, DIE_W - 20000, cy + 800) # Horizontal cross branch
+    gds.add_box(L_MET5, 0, cx - 1000, 18000, cx + 1000, DIE_H - 18000)
+    gds.add_box(L_MET4, 0, 18000, cy - 800, CB_X1 - 6000, cy + 800)
+    gds.add_box(L_MET4, 0, CB_X2 + 6000, cy - 800, DIE_W - 18000, cy + 800)
 
-    # 6. Exterior NoC Port Boundary Pins (North, South, East, West, Local)
+    # 6. Exterior NoC Port Pins
     pins = [
-        ("N_RX", 160000, DIE_H - 4000), ("N_TX", 200000, DIE_H - 4000),
-        ("S_RX", 160000, 0),             ("S_TX", 200000, 0),
-        ("W_RX", 0, 160000),             ("W_TX", 0, 200000),
-        ("E_RX", DIE_W - 4000, 160000),  ("E_TX", DIE_W - 4000, 200000),
-        ("CLK",  20000, 0),              ("RST",  40000, 0)
+        ("N_RX", 160000, DIE_H - 5000), ("N_TX", 200000, DIE_H - 5000),
+        ("S_RX", 160000, 0),            ("S_TX", 200000, 0),
+        ("W_RX", 0, 160000),            ("W_TX", 0, 200000),
+        ("E_RX", DIE_W - 5000, 160000), ("E_TX", DIE_W - 5000, 200000),
+        ("CLK",  24000, 0),             ("RST",  44000, 0),
     ]
-    for pname, px, py in pins:
+    for _, px, py in pins:
         gds.add_box(L_PIN, 0, px, py, px + 5000, py + 5000)
         gds.add_box(L_MET3, 0, px, py, px + 5000, py + 5000)
 
     gds.end_structure()
     gds.close()
     print(f"[SUCCESS] Built {out_path} ({os.path.getsize(out_path)} bytes)")
+    viols = verify_gds(out_path, report_path=report_path, top_name="noc_router_top")
+    if viols != 0:
+        raise SystemExit(f"DRC failed with {viols} violations")
+
 
 if __name__ == "__main__":
-    out_file = r"D:\CODE\GGANTIGRAVITY\layout-noc-router\gds\noc_router.gds"
-    build_noc_router_layout(out_file)
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    out_file = os.path.join(root, "gds", "noc_router.gds")
+    rep_file = os.path.join(root, "reports", "drc_report.txt")
+    build_noc_router_layout(out_file, rep_file)
